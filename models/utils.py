@@ -3,6 +3,11 @@
 import torch
 import torch.nn as nn
 
+def init_weights(m):
+    if type(m) == nn.Linear:
+        nn.init.xavier_uniform(m.weight)
+        m.bias.data.fill_(0.01)
+
 
 def make_mlp(input_size, sizes,
              hidden_activation=nn.ReLU,
@@ -24,4 +29,6 @@ def make_mlp(input_size, sizes,
         if layer_norm:
             layers.append(nn.LayerNorm(sizes[-1]))
         layers.append(output_activation())
-    return nn.Sequential(*layers)
+    net = nn.Sequential(*layers)
+    net.apply(init_weights)
+    return net
