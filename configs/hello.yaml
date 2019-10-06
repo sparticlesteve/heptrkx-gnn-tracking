@@ -10,4 +10,4 @@ data:
     batch_size: 128
 
 training:
-    n_epochs: 1
+    n_total_epochs: 1

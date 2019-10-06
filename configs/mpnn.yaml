@@ -31,4 +31,4 @@ optimizer:
         - {start_epoch: 32, end_epoch: 64, factor: 0.01}
 
 training:
-    n_epochs: 64
+    n_total_epochs: 64

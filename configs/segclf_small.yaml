@@ -24,4 +24,4 @@ optimizer:
     lr_scaling: 'linear'
 
 training:
-    n_epochs: 32
+    n_total_epochs: 32

@@ -30,13 +30,13 @@ class HitGraphDataset(Dataset):
             filenames = self.metadata.file.values
         elif input_dir is not None:
             input_dir = os.path.expandvars(input_dir)
-            filenames = [os.path.join(input_dir, f) for f in os.listdir(input_dir)
-                         if f.startswith('event') and not f.endswith('_ID.npz')]
+            filenames = sorted([os.path.join(input_dir, f) for f in os.listdir(input_dir)
+                                if f.startswith('event') and not f.endswith('_ID.npz')])
         else:
             raise Exception('Must provide either input_dir or filelist to HitGraphDataset')
         self.filenames = filenames if n_samples is None else filenames[:n_samples]
         self.real_weight = real_weight
-        self.fake_weight = real_weight / (2 * real_weight - 1)
+        self.fake_weight = 1 #real_weight / (2 * real_weight - 1)
 
     def __getitem__(self, index):
         x, edge_index, y = load_graph(self.filenames[index])
@@ -44,7 +44,8 @@ class HitGraphDataset(Dataset):
         w = y * self.real_weight + (1-y) * self.fake_weight
         return torch_geometric.data.Data(x=torch.from_numpy(x),
                                          edge_index=torch.from_numpy(edge_index),
-                                         y=torch.from_numpy(y), w=torch.from_numpy(w))
+                                         y=torch.from_numpy(y), w=torch.from_numpy(w),
+                                         i=index)
 
     def __len__(self):
         return len(self.filenames)

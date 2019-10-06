@@ -47,6 +47,7 @@ def load_summaries(config):
     return pd.read_csv(summary_file)
 
 def load_model(config, reload_epoch):
+    """deprecated"""
     model_config = config['model']
     model_config.pop('loss_func', None)
     model = get_model(**model_config)
@@ -61,12 +62,13 @@ def load_model(config, reload_epoch):
 def get_dataset(config):
     return HitGraphDataset(get_input_dir(config))
 
-def get_test_data_loader(config, n_test=16):
+def get_test_data_loader(config, n_test=16, batch_size=1):
     # Take the test set from the back
     full_dataset = get_dataset(config)
     test_indices = len(full_dataset) - 1 - torch.arange(n_test)
-    test_dataset = Subset(full_dataset, test_indices)
-    return DataLoader(test_dataset, batch_size=1, collate_fn=Batch.from_data_list)
+    test_dataset = Subset(full_dataset, test_indices.tolist())
+    return DataLoader(test_dataset, batch_size=batch_size,
+                      collate_fn=Batch.from_data_list)
 
 def get_dense_dataset(config):
     return datasets.hitgraphs.HitGraphDataset(get_input_dir(config))
@@ -75,7 +77,7 @@ def get_dense_test_data_loader(config, n_test=16):
     # Take the test set from the back
     full_dataset = get_dense_dataset(config)
     test_indices = len(full_dataset) - 1 - torch.arange(n_test)
-    test_dataset = Subset(full_dataset, test_indices)
+    test_dataset = Subset(full_dataset, test_indices.tolist())
     return DataLoader(test_dataset, batch_size=1,
                       collate_fn=datasets.hitgraphs.collate_fn)
 
@@ -118,23 +120,34 @@ def compute_metrics(preds, targets, threshold=0.5):
                    prc_precision=prc_precision, prc_recall=prc_recall, prc_thresh=prc_thresh,
                    roc_fpr=roc_fpr, roc_tpr=roc_tpr, roc_thresh=roc_thresh, roc_auc=roc_auc)
 
-def plot_train_history(summaries, figsize=(12, 5), loss_yscale='linear'):
-    fig, (ax0, ax1) = plt.subplots(ncols=2, figsize=figsize)
+def plot_train_history(summaries, figsize=(12, 10), loss_yscale='linear'):
+    fig, axs = plt.subplots(nrows=2, ncols=2, figsize=figsize)
+    axs = axs.flatten()
 
     # Plot losses
-    ax0.plot(summaries.epoch, summaries.train_loss, label='Train')
-    ax0.plot(summaries.epoch, summaries.valid_loss, label='Validation')
-    ax0.set_yscale(loss_yscale)
-    ax0.set_xlabel('Epoch')
-    ax0.set_ylabel('Loss')
-    ax0.legend(loc=0)
+    axs[0].plot(summaries.epoch, summaries.train_loss, label='Train')
+    axs[0].plot(summaries.epoch, summaries.valid_loss, label='Validation')
+    axs[0].set_yscale(loss_yscale)
+    axs[0].set_xlabel('Epoch')
+    axs[0].set_ylabel('Loss')
+    axs[0].legend(loc=0)
 
     # Plot accuracies
-    ax1.plot(summaries.epoch, summaries.valid_acc, label='Validation')
-    ax1.set_xlabel('Epoch')
-    ax1.set_ylabel('Accuracy')
-    ax1.set_ylim(bottom=0, top=1)
-    ax1.legend(loc=0)
+    axs[1].plot(summaries.epoch, summaries.valid_acc, label='Validation')
+    axs[1].set_xlabel('Epoch')
+    axs[1].set_ylabel('Accuracy')
+    axs[1].set_ylim(bottom=0, top=1)
+    axs[1].legend(loc=0)
+
+    # Plot model weight norm
+    axs[2].plot(summaries.epoch, summaries.l2)
+    axs[2].set_xlabel('Epoch')
+    axs[2].set_ylabel('Model L2 weight norm')
+
+    # Plot learning rate
+    axs[3].plot(summaries.epoch, summaries.lr)
+    axs[3].set_xlabel('Epoch')
+    axs[3].set_ylabel('Learning rate')
 
     plt.tight_layout()
 
@@ -222,7 +235,6 @@ def draw_sample(X, Ri, Ro, y, cmap='bwr_r', alpha_labels=True, figsize=(15, 7)):
     ax0.set_ylabel('$r$')
     ax1.set_ylabel('$r$')
     plt.tight_layout()
-
 
 def draw_sample_xy(hits, edges, preds, labels, cut=0.5, figsize=(16, 16)):
     x = hits[:,0] * np.cos(hits[:,1])

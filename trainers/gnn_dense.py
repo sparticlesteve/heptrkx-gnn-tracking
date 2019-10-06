@@ -50,7 +50,6 @@ class DenseGNNTrainer(GNNBaseTrainer):
         self.logger.debug(' Processed %i batches', n_batches)
         self.logger.debug(' Current LR %f', summary['lr'])
         self.logger.info('  Training loss: %.3f', summary['train_loss'])
-        self.lr_scheduler.step()
         return summary
 
     @torch.no_grad()

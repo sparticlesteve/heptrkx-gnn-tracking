@@ -138,17 +138,20 @@ class GNNBaseTrainer(object):
 
         # Load the summaries
         summary_file = os.path.join(self.output_dir, 'summaries_%i.csv' % self.rank)
+        if not os.path.exists(summary_file):
+            logging.info('Summary file does not exist. Will not load checkpoint')
+            return
         logging.info('Reloading summary at %s', summary_file)
         self.summaries = pd.read_csv(summary_file)
 
-        # Load the specified checkpoint or last one from summaries
+        # Load the checkpoint
         checkpoint_dir = os.path.join(self.output_dir, 'checkpoints')
         if checkpoint_id == -1:
             checkpoint_id = self.summaries.epoch.iloc[-1]
-        checkpoint_file = 'model_checkpoint_%03i.pth.tar' % checkpoint_id
+        checkpoint_file = os.path.join(
+            checkpoint_dir, 'model_checkpoint_%03i.pth.tar' % checkpoint_id)
         logging.info('Reloading checkpoint at %s', checkpoint_file)
-        checkpoint = torch.load(os.path.join(checkpoint_dir, checkpoint_file),
-                                map_location=self.device)
+        checkpoint = torch.load(checkpoint_file, map_location=self.device)
         # If using DistributedDataParallel, just load the wrapped model state
         if self.distributed_mode in ['ddp-file', 'ddp-mpi']:
             self.model.module.load_state_dict(checkpoint['model'])
@@ -175,7 +178,8 @@ class GNNBaseTrainer(object):
         """Virtual method to apply a model"""
         raise NotImplementedError
 
-    def train(self, train_data_loader, n_epochs, valid_data_loader=None):
+    def train(self, train_data_loader, valid_data_loader=None,
+              n_epochs=-1, n_total_epochs=0):
         """Run the model training"""
 
         # Determine initial epoch in case resuming training
@@ -183,8 +187,13 @@ class GNNBaseTrainer(object):
         if self.summaries is not None:
             start_epoch = self.summaries.epoch.max() + 1
 
+        # Determine how many epochs we run in this call
+        end_epoch = n_total_epochs
+        if n_epochs >= 0:
+            end_epoch = min(start_epoch+n_epochs, n_total_epochs)
+
         # Loop over epochs
-        for epoch in range(start_epoch, n_epochs):
+        for epoch in range(start_epoch, end_epoch):
             self.logger.info('Epoch %i' % epoch)
             try:
                 train_data_loader.sampler.set_epoch(epoch)
@@ -194,6 +203,7 @@ class GNNBaseTrainer(object):
             # Train on this epoch
             start_time = time.time()
             summary = self.train_epoch(train_data_loader)
+            self.lr_scheduler.step()
             summary['epoch'] = epoch
             summary['train_time'] = time.time() - start_time
 
@@ -207,5 +217,5 @@ class GNNBaseTrainer(object):
             self.save_summary(summary)
             if self.output_dir is not None and self.rank == 0:
                 self.write_checkpoint(checkpoint_id=epoch)
-
+            
         return self.summaries

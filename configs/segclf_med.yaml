@@ -27,4 +27,4 @@ optimizer:
     lr_warmup_epochs: 2
 
 training:
-    n_epochs: 64
+    n_total_epochs: 64

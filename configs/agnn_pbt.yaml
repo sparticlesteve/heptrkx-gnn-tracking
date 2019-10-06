@@ -1,4 +1,4 @@
-output_dir: ${SCRATCH}/heptrkx/results/agnn_005
+output_dir: ${SCRATCH}/heptrkx/results/agnn_pbt_000
 
 trainer:
     name: gnn_sparse
@@ -6,27 +6,23 @@ trainer:
 data:
     name: hitgraphs_sparse
     input_dir: ${SCRATCH}/heptrkx/data/hitgraphs_high_000
-    n_train: 57344
-    n_valid: 4096
+    n_train: 1024 #57344
+    n_valid: 1024
     real_weight: 5 #6.25  # 0.5 / 0.08
     batch_size: 4
-    n_workers: 4
+    n_workers: 1
 
 model:
     name: agnn
     input_dim: 3
-    hidden_dim: 64
-    n_graph_iters: 8
+    hidden_dim: 32
+    n_graph_iters: 4
     layer_norm: true
     loss_func: binary_cross_entropy_with_logits
 
 optimizer:
     name: Adam
     learning_rate: 0.001
-    #lr_scaling: sqrt
-    #lr_warmup_epochs: 5
-    lr_decay_schedule:
-        - {start_epoch: 64, end_epoch: 128, factor: 0.1}
 
 training:
-    n_total_epochs: 128
+    n_total_epochs: 64

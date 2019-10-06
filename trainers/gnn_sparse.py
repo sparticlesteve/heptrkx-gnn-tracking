@@ -2,12 +2,16 @@
 This module defines a generic trainer for simple models and datasets.
 """
 
+# System
+import logging
+
 # Externals
 import torch
 
 # Locals
 from .gnn_base import GNNBaseTrainer
 from utils.ConfusionMatrix import OnlineConfusionMatrix
+from utils.checks import get_weight_norm, get_grad_norm
 
 class SparseGNNTrainer(GNNBaseTrainer):
     """Trainer code for sparse GNN."""
@@ -29,16 +33,25 @@ class SparseGNNTrainer(GNNBaseTrainer):
             batch_loss.backward()
             self.optimizer.step()
             sum_loss += batch_loss.item()
-            self.logger.debug('  train batch %i, loss %f', i, batch_loss.item())
+
+            # Dump additional debugging information
+            if self.logger.isEnabledFor(logging.DEBUG):
+                l1 = get_weight_norm(self.model, 1)
+                l2 = get_weight_norm(self.model, 2)
+                grad_norm = get_grad_norm(self.model)
+                self.logger.debug('  train batch %i loss %.4f l1 %.2f l2 %.4f grad %.3f idx %i',
+                                  i, batch_loss.item(), l1, l2, grad_norm, batch.i[0].item())
 
         # Summarize the epoch
         n_batches = i + 1
         summary['lr'] = self.optimizer.param_groups[0]['lr']
         summary['train_loss'] = sum_loss / n_batches
+        summary['l1'] = get_weight_norm(self.model, 1)
+        summary['l2'] = get_weight_norm(self.model, 2)
         self.logger.debug(' Processed %i batches', n_batches)
-        self.logger.debug(' Current LR %f', summary['lr'])
+        self.logger.debug(' Model LR %f l1 %.2f l2 %.2f',
+                          summary['lr'], summary['l1'], summary['l2'])
         self.logger.info('  Training loss: %.3f', summary['train_loss'])
-        self.lr_scheduler.step()
         return summary
 
     @torch.no_grad()

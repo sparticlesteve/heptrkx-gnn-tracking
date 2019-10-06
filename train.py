@@ -12,6 +12,7 @@ import pickle
 # Externals
 import yaml
 import numpy as np
+import torch
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
@@ -22,6 +23,7 @@ import distributed
 
 def parse_args():
     """Parse command line arguments."""
+    hpo_warning = 'Flag overwrites config value if set, used for HPO and PBT runs primarily'
     parser = argparse.ArgumentParser('train.py')
     add_arg = parser.add_argument
     add_arg('config', nargs='?', default='configs/hello.yaml')
@@ -34,6 +36,19 @@ def parse_args():
     add_arg('--show-config', action='store_true')
     add_arg('--interactive', action='store_true')
     add_arg('--output-dir', help='override output_dir setting')
+    add_arg('--seed', type=int, default=0, help='random seed')
+    add_arg('--fom', default=None, choices=['last', 'best'],
+            help='Print figure of merit for HPO/PBT')
+    add_arg('--batch-size', type=int, help='Override batch size. %s' % hpo_warning)
+    add_arg('--n-epochs', type=int, help='Specify subset of total epochs to run')
+    add_arg('--real-weight', type=float, default=None,
+            help='class weight of real to fake edges for the loss. %s' % hpo_warning)
+    add_arg('--lr', type=float, default=None,
+            help='Learning rate. %s' % hpo_warning)
+    add_arg('--hidden-dim', type=int, default=None,
+            help='Hidden layer dimension size. %s' % hpo_warning)
+    add_arg('--n-graph-iters', type=int, default=None,
+            help='Number of graph iterations. %s' % hpo_warning)
     return parser.parse_args()
 
 def config_logging(verbose, output_dir, append=False, rank=0):
@@ -43,7 +58,9 @@ def config_logging(verbose, output_dir, append=False, rank=0):
     stream_handler.setLevel(log_level)
     handlers = [stream_handler]
     if output_dir is not None:
-        log_file = os.path.join(output_dir, 'out_%i.log' % rank)
+        log_dir = output_dir
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, 'out_%i.log' % rank)
         mode = 'a' if append else 'w'
         file_handler = logging.FileHandler(log_file, mode=mode)
         file_handler.setLevel(log_level)
@@ -83,6 +100,27 @@ def save_config(config):
     with open(config_file, 'wb') as f:
         pickle.dump(config, f)
 
+def update_config(config, args):
+    """
+    Updates config values with command line overrides. This is needed
+    for HPO and PBT runs where hyperparameters must be exposed via command line flags.
+    Returns the updated config.
+    """
+    if args.real_weight is not None:
+        config['data']['real_weight'] = args.real_weight
+    if args.lr is not None:
+        config['optimizer']['learning_rate'] = args.lr
+    if args.hidden_dim is not None:
+        config['model']['hidden_dim'] = args.hidden_dim
+    if args.n_graph_iters is not None:
+        config['model']['n_graph_iters'] = args.n_graph_iters
+    if args.batch_size is not None:
+        config['data']['batch_size'] = args.batch_size
+    if args.n_epochs is not None:
+        config['training']['n_epochs'] = args.n_epochs
+
+    return config
+
 def main():
     """Main function"""
 
@@ -95,6 +133,7 @@ def main():
     # Load configuration
     config = load_config(args.config, output_dir=args.output_dir,
                          n_ranks=n_ranks)
+    config = update_config(config, args)
     os.makedirs(config['output_dir'], exist_ok=True)
 
     # Setup logging
@@ -108,6 +147,12 @@ def main():
         logging.info('Saving job outputs to %s', config['output_dir'])
         if args.distributed is not None:
             logging.info('Using distributed mode: %s', args.distributed)
+
+    # Reproducible training [NOTE, doesn't full work on GPU]
+    torch.manual_seed(args.seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(args.seed + 10)
 
     # Save configuration in the outptut directory
     if rank == 0:
@@ -138,6 +183,7 @@ def main():
     # Build the model and optimizer
     model_config = config.get('model', {})
     optimizer_config = config.get('optimizer', {})
+    logging.debug('Building model')
     trainer.build_model(optimizer_config=optimizer_config, **model_config)
     if rank == 0:
         trainer.print_model_summary()
@@ -147,6 +193,7 @@ def main():
         trainer.load_checkpoint()
 
     # Run the training
+    logging.debug('Training')
     summary = trainer.train(train_data_loader=train_data_loader,
                             valid_data_loader=valid_data_loader,
                             **config['training'])
@@ -163,12 +210,20 @@ def main():
         logging.info('Valid samples %g time %g s rate %g samples/s',
                      n_valid_samples, valid_time, n_valid_samples / valid_time)
 
+    # Print figure of merit for Cray-HPO
+    if rank == 0:
+        if args.fom == 'last':
+            print('FoM: %e' % summary['valid_loss'].iloc[-1])
+        elif args.fom == 'best':
+            print('FoM: %e' % summary['valid_loss'].min())
+
     # Drop to IPython interactive shell
     if args.interactive and (rank == 0):
         logging.info('Starting IPython interactive session')
         import IPython
         IPython.embed()
 
+    # All done
     if rank == 0:
         logging.info('All done!')
 

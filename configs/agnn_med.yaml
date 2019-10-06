@@ -24,4 +24,4 @@ optimizer:
     learning_rate: 0.001
 
 training:
-    n_epochs: 64
+    n_total_epochs: 64
