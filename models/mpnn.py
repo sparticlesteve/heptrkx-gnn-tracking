@@ -23,27 +23,24 @@ class GNN(nn.Module):
     - an edge classifier
     """
 
-    def __init__(self, input_dim, hidden_node_dim, hidden_edge_dim,
+    def __init__(self, input_dim, hidden_dim,
                  n_graph_iters=1, layer_norm=True):
         super(GNN, self).__init__()
         self.n_graph_iters = n_graph_iters
 
         # The node encoder transforms input node features to the hidden space
-        self.node_encoder = make_mlp(input_dim, [hidden_node_dim]*2)
+        self.node_encoder = make_mlp(input_dim, [hidden_dim]*2)
 
         # The edge network computes new edge features from connected nodes
-        self.edge_network = make_mlp(2*hidden_node_dim,
-                                     [hidden_edge_dim]*4,
+        self.edge_network = make_mlp(2*hidden_dim, [hidden_dim]*4,
                                      layer_norm=layer_norm)
 
         # The node network computes new node features
-        self.node_network = make_mlp(hidden_node_dim + hidden_edge_dim,
-                                     [hidden_node_dim]*4,
+        self.node_network = make_mlp(2*hidden_dim, [hidden_dim]*4,
                                      layer_norm=layer_norm)
 
         # The edge classifier computes final edge scores
-        self.edge_classifier = make_mlp(2*hidden_node_dim,
-                                        [hidden_edge_dim, 1],
+        self.edge_classifier = make_mlp(2*hidden_dim, [hidden_dim, 1],
                                         output_activation=None)
 
     def forward(self, data):
