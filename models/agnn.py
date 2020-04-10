@@ -99,9 +99,6 @@ class GNNSegmentClassifier(nn.Module):
             # Apply node network
             x = self.node_network(x, e, inputs.edge_index)
 
-            # Shortcut connect the inputs onto the hidden representation
-            #x = torch.cat([x, inputs.x], dim=-1)
-
             # Residual connection
             x = x + x0
 
