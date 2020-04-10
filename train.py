@@ -49,6 +49,10 @@ def parse_args():
             help='Learning rate. %s' % hpo_warning)
     add_arg('--hidden-dim', type=int, default=None,
             help='Hidden layer dimension size. %s' % hpo_warning)
+    add_arg('--n-edge-layers', type=int,
+            help='Number of layers in edge network MLP')
+    add_arg('--n-node-layers', type=int,
+            help='Number of layers in node network MLP')
     add_arg('--n-graph-iters', type=int, default=None,
             help='Number of graph iterations. %s' % hpo_warning)
     add_arg('--weight-decay', type=float)
@@ -119,6 +123,10 @@ def update_config(config, args):
         config['optimizer']['learning_rate'] = args.lr
     if args.hidden_dim is not None:
         config['model']['hidden_dim'] = args.hidden_dim
+    if args.n_edge_layers is not None:
+        config['model']['n_edge_layers'] = args.n_edge_layers
+    if args.n_node_layers is not None:
+        config['model']['n_node_layers'] = args.n_node_layers
     if args.n_graph_iters is not None:
         config['model']['n_graph_iters'] = args.n_graph_iters
     if args.batch_size is not None:
