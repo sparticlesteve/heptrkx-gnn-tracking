@@ -11,7 +11,6 @@ from torch_scatter import scatter_add
 # Locals
 from .utils import make_mlp
 
-
 class GNN(nn.Module):
     """
     A message-passing graph network which takes a graph with:

@@ -87,9 +87,6 @@ class GNNSegmentClassifier(nn.Module):
         # Apply input network to get hidden representation
         x = self.input_network(inputs.x)
 
-        # Shortcut connect the inputs onto the hidden representation
-        #x = torch.cat([x, inputs.x], dim=-1)
-
         # Loop over iterations of edge and node networks
         for i in range(self.n_graph_iters):
 
