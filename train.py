@@ -75,8 +75,8 @@ def config_logging(verbose, output_dir, append=False, rank=0):
 def init_workers(dist_mode):
     """Initialize worker process group"""
     if dist_mode == 'ddp-file':
-        from distributed.torch import init_workers_file
-        return init_workers_file()
+        from distributed.torch import init_workers_nccl_file
+        return init_workers_nccl_file()
     elif dist_mode == 'ddp-mpi':
         from distributed.torch import init_workers_mpi
         return init_workers_mpi()
