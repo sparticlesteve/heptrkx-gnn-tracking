@@ -103,3 +103,6 @@ class GNNSegmentClassifier(nn.Module):
             H = torch.cat([H, X], dim=-1)
         # Apply final edge network
         return self.edge_network(H, Ri, Ro)
+
+def build_model(**kwargs):
+    return GNNSegmentClassifier(**kwargs)

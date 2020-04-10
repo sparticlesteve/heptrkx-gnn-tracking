@@ -104,3 +104,6 @@ class GNNSegmentClassifier(nn.Module):
 
         # Apply final edge network
         return self.edge_network(x, inputs.edge_index)
+
+def build_model(**kwargs):
+    return GNNSegmentClassifier(**kwargs)

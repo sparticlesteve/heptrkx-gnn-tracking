@@ -78,3 +78,6 @@ class GNN(nn.Module):
         start_idx, end_idx = data.edge_index
         clf_inputs = torch.cat([x[start_idx], x[end_idx]], dim=1)
         return self.edge_classifier(clf_inputs).squeeze(-1)
+
+def build_model(**kwargs):
+    return GNN(**kwargs)
