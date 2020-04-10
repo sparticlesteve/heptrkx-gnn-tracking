@@ -1,4 +1,4 @@
-output_dir: ${SCRATCH}/heptrkx/results/agnn_007
+output_dir: ${SCRATCH}/heptrkx/results/agnn_010
 
 trainer:
     name: gnn_sparse
@@ -6,10 +6,10 @@ trainer:
 data:
     name: hitgraphs_sparse
     input_dir: ${SCRATCH}/heptrkx/data/hitgraphs_high_000
-    n_train: 57344
+    n_train: 32768 #57344
     n_valid: 4096
     real_weight: 3
-    batch_size: 4
+    batch_size: 1
     n_workers: 4
 
 model:
@@ -26,9 +26,9 @@ model:
 optimizer:
     name: Adam
     learning_rate: 0.001
-    weight_decay: 1.e-4
+    weight_decay: 1.e-5
     lr_decay_schedule:
-        - {start_epoch: 64, end_epoch: 128, factor: 0.1}
+        - {start_epoch: 32, end_epoch: 64, factor: 0.1}
 
 training:
-    n_total_epochs: 128
+    n_total_epochs: 64
