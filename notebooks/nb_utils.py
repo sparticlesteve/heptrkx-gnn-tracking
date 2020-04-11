@@ -207,7 +207,7 @@ def plot_outputs_roc(preds, targets, metrics):
     ax1.set_title('ROC curve, AUC = %.3f' % metrics.roc_auc)
     plt.tight_layout()
 
-def draw_sample(X, Ri, Ro, y, cmap='bwr_r', alpha_labels=True, figsize=(15, 7)):
+def draw_sample_old(X, Ri, Ro, y, cmap='bwr_r', alpha_labels=True, figsize=(15, 7)):
     # Select the i/o node features for each segment
     feats_o = X[np.where(Ri.T)[1]]
     feats_i = X[np.where(Ro.T)[1]]
@@ -237,9 +237,7 @@ def draw_sample(X, Ri, Ro, y, cmap='bwr_r', alpha_labels=True, figsize=(15, 7)):
     ax1.set_ylabel('$r$')
     plt.tight_layout()
 
-def draw_sample_xy(hits, edges, preds, labels, cut=0.5, figsize=(16, 16)):
-    x = hits[:,0] * np.cos(hits[:,1])
-    y = hits[:,0] * np.sin(hits[:,1])
+def draw_sample(x, y, edges, preds, labels, cut=0.5, figsize=(16, 16)):
     fig, ax0 = plt.subplots(figsize=figsize)
 
     # Draw the hits
@@ -267,3 +265,25 @@ def draw_sample_xy(hits, edges, preds, labels, cut=0.5, figsize=(16, 16)):
                      '-', c='k', alpha=preds[j])
 
     return fig, ax0
+
+def draw_sample_xy(hits, edges, preds, labels, **kwargs):
+    x = hits[:,0] * np.cos(hits[:,1])
+    y = hits[:,0] * np.sin(hits[:,1])
+    fig, ax = draw_sample(x, y, edges, preds, labels, **kwargs)
+    ax.set_xlabel('x [mm]')
+    ax.set_ylabel('y [mm]')
+    return fig, ax
+
+def draw_sample_rphi(hits, edges, preds, labels, **kwargs):
+    r, phi = hits[:,0], hits[:,1]
+    fig, ax = draw_sample(phi, r, edges, preds, labels, **kwargs)
+    ax.set_xlabel('$\phi$ [rad]')
+    ax.set_ylabel('r [mm]')
+    return fig, ax
+
+def draw_sample_rz(hits, edges, preds, labels, **kwargs):
+    r, z = hits[:,0], hits[:,2]
+    fig, ax = draw_sample(z, r, edges, preds, labels, **kwargs)
+    ax.set_xlabel('z [mm]')
+    ax.set_ylabel('r [mm]')
+    return fig, ax
