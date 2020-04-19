@@ -1,12 +1,12 @@
-output_dir: ${SCRATCH}/heptrkx/results/mpnn_010
+output_dir: ${SCRATCH}/heptrkx/results/mpnn_012
 
 trainer:
     name: gnn_sparse
 
 data:
     name: hitgraphs_sparse
-    input_dir: ${SCRATCH}/heptrkx/data/hitgraphs_high_000
-    n_train: 32768 #57344
+    input_dir: ${SCRATCH}/heptrkx/data/hitgraphs_high_002
+    n_train: 57344
     n_valid: 4096
     real_weight: 3
     batch_size: 1
