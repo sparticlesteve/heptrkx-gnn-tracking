@@ -6,9 +6,8 @@
 #SBATCH -o logs/%x-%j.out
 
 mkdir -p logs
-#. scripts/setup.sh
+. scripts/setup_cori.sh
 config=configs/prep_high.yaml
-module load pytorch
 
 # Loop over tasks (1 per node) and submit
 i=0
