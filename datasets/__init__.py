@@ -2,12 +2,17 @@
 PyTorch dataset specifications.
 """
 
+# Externals
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data.dataloader import default_collate
 
+# Locals
+from .sampler import DistributedBalancedBatchSampler
+
 def get_data_loaders(name, batch_size, distributed=False,
                      n_workers=0, rank=None, n_ranks=None,
+                     balanced_sampler=False, data_buckets=None,
                      **data_args):
     """This may replace the datasets function above"""
     collate_fn = default_collate
@@ -26,15 +31,35 @@ def get_data_loaders(name, batch_size, distributed=False,
     else:
         raise Exception('Dataset %s unknown' % name)
 
-    # Construct the data loaders
-    loader_args = dict(batch_size=batch_size, collate_fn=collate_fn,
-                       num_workers=n_workers)
-    train_sampler, valid_sampler = None, None
+    # Setup the distributed samplers
+    train_sampler, train_batch_sampler, valid_sampler = None, None, None
     if distributed:
-        train_sampler = DistributedSampler(train_dataset, rank=rank, num_replicas=n_ranks)
+        # Balanced batch sampler
+        if balanced_sampler:
+            train_batch_sampler = DistributedBalancedBatchSampler(
+                train_dataset, batch_size=batch_size, n_buckets=data_buckets,
+                rank=rank, n_ranks=n_ranks)
+        # Normal distributed sampler
+        else:
+            train_sampler = DistributedSampler(train_dataset, rank=rank,
+                                               num_replicas=n_ranks)
+        # Normal distributed sampler for validation dataset
         valid_sampler = DistributedSampler(valid_dataset, rank=rank, num_replicas=n_ranks)
-    train_data_loader = DataLoader(train_dataset, sampler=train_sampler,
-                                   shuffle=(train_sampler is None), **loader_args)
-    valid_data_loader = (DataLoader(valid_dataset, sampler=valid_sampler, **loader_args)
-                         if valid_dataset is not None else None)
+
+    # Construct the data loaders
+    train_data_loader = DataLoader(train_dataset,
+                                   batch_size=batch_size,
+                                   collate_fn=collate_fn,
+                                   num_workers=n_workers,
+                                   sampler=train_sampler,
+                                   batch_sampler=train_batch_sampler,
+                                   shuffle=(not distributed))
+    if valid_dataset is not None:
+        valid_data_loader = DataLoader(valid_dataset,
+                                       batch_size=batch_size,
+                                       collate_fn=collate_fn,
+                                       num_workers=n_workers,
+                                       sampler=valid_sampler)
+    else:
+        valid_data_loader = None
     return train_data_loader, valid_data_loader
