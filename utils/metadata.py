@@ -2,6 +2,7 @@
 
 # System
 import os
+import logging
 
 # Externals
 import numpy as np
@@ -18,7 +19,7 @@ def _process_file(filename):
 def prepare_metadata(data_dir, n_files=None):
     """Prepare metadata dataframe for a data directory"""
     files = [os.path.join(data_dir, f) for f in os.listdir(data_dir)
-             if not f.endswith('_ID.npz')]
+             if f.startswith('event') and not f.endswith('_ID.npz')]
     print('%i total files' % len(files))
     if n_files is not None:
         files = files[:n_files]
@@ -31,4 +32,6 @@ def save_metadata(metadata, data_dir):
 
 def read_metadata(data_dir):
     """Read metadata from directory"""
-    return pd.read_csv(os.path.join(data_dir, 'metadata.csv'))
+    mdfile = os.path.expandvars(os.path.join(data_dir, 'metadata.csv'))
+    logging.info('Reading metadata from %s', mdfile)
+    return pd.read_csv(mdfile)
