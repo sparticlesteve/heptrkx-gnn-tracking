@@ -26,6 +26,7 @@ class SparseGNNTrainer(GNNBaseTrainer):
         # Loop over training batches
         for i, batch in enumerate(data_loader):
             batch = batch.to(self.device)
+            #self.logger.info('Local graph %i size: (%i, %i)', i, batch.x.shape[0], batch.y.shape[0])
             self.model.zero_grad()
             batch_output = self.model(batch)
             batch_loss = self.loss_func(batch_output, batch.y, weight=batch.w)
