@@ -1,6 +1,7 @@
 # Input/output configuration
 input_dir: /global/cscratch1/sd/sfarrell/trackml/train_all
-output_dir: /global/cscratch1/sd/sfarrell/heptrkx/data/hitgraphs_high_000
+#input_dir: /global/cfs/cdirs/m3443/data/trackml-kaggle/train_all
+output_dir: /global/cscratch1/sd/sfarrell/heptrkx/data/hitgraphs_high_002
 n_files: 8192
 
 # Graph building configuration

@@ -45,6 +45,8 @@ def parse_args():
     add_arg('--n-epochs', type=int, help='Specify subset of total epochs to run')
     add_arg('--real-weight', type=float, default=None,
             help='class weight of real to fake edges for the loss. %s' % hpo_warning)
+    add_arg('--n-data-buckets', type=int,
+            help='Enable balanced data sampling with specified number of buckets')
     add_arg('--lr', type=float, default=None,
             help='Learning rate. %s' % hpo_warning)
     add_arg('--hidden-dim', type=int, default=None,
@@ -119,6 +121,9 @@ def update_config(config, args):
         config['data']['n_valid'] = args.n_valid
     if args.real_weight is not None:
         config['data']['real_weight'] = args.real_weight
+    if args.n_data_buckets is not None and args.n_data_buckets > 0:
+        config['data']['balanced_sampler'] = True
+        config['data']['data_buckets'] = args.n_data_buckets
     if args.lr is not None:
         config['optimizer']['learning_rate'] = args.lr
     if args.hidden_dim is not None:
