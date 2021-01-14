@@ -1,4 +1,4 @@
-output_dir: ${SCRATCH}/heptrkx/results/mpnn_012
+output_dir: ${SCRATCH}/heptrkx/results_balanced/mpnn_001
 
 trainer:
     name: gnn_sparse
@@ -11,6 +11,8 @@ data:
     real_weight: 3
     batch_size: 1
     n_workers: 4
+    balanced_sampler: True
+    data_buckets: 128
 
 model:
     name: mpnn
